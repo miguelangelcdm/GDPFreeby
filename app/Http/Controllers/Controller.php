@@ -6,8 +6,6 @@ use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Foundation\Validation\ValidatesRequests;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
-use League\Csv\Reader;
 
 class Controller extends BaseController
 {
@@ -23,9 +21,6 @@ class Controller extends BaseController
             }
             fclose($handle);
         }
-
-        // Process $csvData as needed
-        // For example, get BalanceStart of the next row - BalanceEnd of the current row
         $balances = [];
         $rowCount = count($csvData);
         $balances[] = 0;
@@ -47,44 +42,27 @@ class Controller extends BaseController
                 'GameId' => $csvData[$i][1] ?? 'N/A',
                 'BalanceStart' => $csvData[$i][4] ?? 'N/A',
                 'BalanceEnd' => $csvData[$i][5] ?? 'N/A',
+                'Jugadas'=> $csvData[$i][6] ?? 'N/A',
+                'GanaciaoDeposito'=> $csvData[$i][7] ?? 'N/A',
                 '$balances' => $balances[$i] ?? 'N/A',
             ];
         }
-        // // Filter the matrix based on the entered search value
-        // $searchValue = $request->input('search_value');
-        // if ($searchValue !== null) {
-        //     $matrix = array_filter($matrix, function ($row) use ($searchValue) {
-        //         return $row['$balances'] == $searchValue;
-        //     });
-        // }
-        // $searchValue = $request->input('search_value');
-        // if ($searchValue !== null) {
-        //     $searchValue = floatval($searchValue);
-        //     $nearestValue = round($searchValue / 40)*-1;
-        //     // dd($nearestValue);
-        //     $matrix = array_filter($matrix, function ($row) use ($nearestValue, $searchValue) {
-        //         $balanceStart = floatval($row['BalanceStart']);
-        //         return $balanceStart >= $nearestValue && $balanceStart <= $searchValue;
-        //     });
-        // }
         // Filter the matrix based on the abrupt change until the search_value position
         $searchValue = $request->input('search_value');
         if ($searchValue !== null) {
-            $searchValue = floatval($searchValue);
-
+            $searchValue = floatval($searchValue)*-1; 
             // Find the position of the row where search_value is located
             $position = array_search($searchValue, array_column($matrix, '$balances'));
-
             // Identify the abrupt change position
             $abruptChangePosition = $this->findAbruptChangePosition($matrix, $position);
             // Filter the matrix based on the abrupt change position until search_value position
             $matrix = array_slice($matrix, $abruptChangePosition-1, $position);
             // dd($abruptChangePosition,$position);
         }
+        
 
         return view('welcome')->with('matrix', $matrix);
     }
-
     private function findAbruptChangePosition($matrix, $searchPosition)
     {
         // Starting from the search position, find the first position with an abrupt change in BalanceStart
