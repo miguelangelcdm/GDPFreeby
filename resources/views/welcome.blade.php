@@ -104,6 +104,8 @@
                 <th scope="col" class="px-6 py-3">Jugadas</th>
                 <th scope="col" class="px-6 py-3">Ganancia o Deposito</th>
                 <th scope="col" class="px-6 py-3">Diferencia de balances</th>
+                <th scope="col" class="px-6 py-3">Jugadas Gratis</th>
+                <th scope="col" class="px-6 py-3">Hora</th>
               </tr>
             </thead>
             <tbody>
@@ -113,9 +115,10 @@
                   <td class="px-6 py-4">{{ $row['BalanceStart'] }}</td>
                   <td class="px-6 py-4">{{ $row['BalanceEnd'] }}</td>
                   <td class="px-6 py-4">{{ $row['Jugadas'] }}</td>
-                  <td class="px-6 py-4">{{ $row['GanaciaoDeposito'] }}</td>
-                  <td class="px-6 py-4">{{ $row['$balances'] }}
-                  </td>
+                  <td class="px-6 py-4">{{ $row['GananciaoDeposito'] }}</td>
+                  <td class="px-6 py-4">{{ $row['$balances'] }}</td>
+                  <td class="px-6 py-4">{{ $row['JugadasGratis'] }}</td>
+                  <td class="px-6 py-4">{{ $row['Hora'] }}</td>
                 </tr>
               @endforeach
             </tbody>

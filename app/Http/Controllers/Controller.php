@@ -29,7 +29,7 @@ class Controller extends BaseController
 
             fclose($handle);
         }
-
+        $threshold = floatval($request->input('threshold')) * 100;
         // fgetcsv( resource $handle [, int $length = 0 [, string $delimiter = "," [, string $enclosure = '"' [, string $escape = "\" ]]]]): array
         // dd($csvData);
         $balances = [];
@@ -52,27 +52,29 @@ class Controller extends BaseController
 
         }
         // dd($balances);
-
         $matrix = [];
         for ($i = 1; $i < $rowCount; $i++) {
             $matrix[] = [
+                
                 'GameId' => $csvData[$i][1] ?? 'N/A',
                 'BalanceStart' => $csvData[$i][4] ?? 'N/A',
                 'BalanceEnd' => $csvData[$i][5] ?? 'N/A',
                 'Jugadas' => $csvData[$i][6] ?? 'N/A',
-                'GanaciaoDeposito' => $csvData[$i][7] ?? 'N/A',
+                'GananciaoDeposito' => $csvData[$i][7] ?? 'N/A',
                 '$balances' => $balances[$i] ?? 'N/A',
+                'JugadasGratis' => $csvData[$i][8] ?? 'N/A',
+                'Hora' => $csvData[$i][11] ?? 'N/A',
             ];
         }
         // Filter the matrix based on the abrupt change until the search_value position
-        $searchValue = floatval($request->input('search_value'))*-100;
+        $searchValue = floatval($request->input('search_value')) * -100;
         if ($searchValue !== null) {
             // $searchValue = floatval($searchValue) * -1;
             // Find the position of the row where search_value is located
             // $position = array_search($searchValue, array_column($matrix, '$balances'));
             $position = $this->findNearestPosition($matrix, '$balances', $searchValue);
             // Identify the abrupt change position
-            $abruptChangePosition = $this->findAbruptChangePosition($matrix, $position,$request);
+            $abruptChangePosition = $this->findAbruptChangePosition($matrix, $position, $threshold);
             // Filter the matrix based on the abrupt change position until search_value position
             $matrix = array_slice($matrix, $abruptChangePosition - 1, $position);
             // dd($abruptChangePosition,$position);
@@ -81,19 +83,19 @@ class Controller extends BaseController
         return view('welcome')->with('matrix', $matrix);
     }
     private function detectDelimiter($sampleRow)
-{
-    // Check for common delimiters in CSV files
-    $possibleDelimiters = [',', ';', '\t', '|'];
+    {
+        // Check for common delimiters in CSV files
+        $possibleDelimiters = [',', ';', '\t', '|'];
 
-    foreach ($possibleDelimiters as $delimiter) {
-        if (strpos($sampleRow, $delimiter) !== false) {
-            return $delimiter;
+        foreach ($possibleDelimiters as $delimiter) {
+            if (strpos($sampleRow, $delimiter) !== false) {
+                return $delimiter;
+            }
         }
-    }
 
-    // Default to comma if no delimiter is detected
-    return ',';
-}
+        // Default to comma if no delimiter is detected
+        return ',';
+    }
     private function findNearestPosition($matrix, $column, $value)
     {
         $minDifference = PHP_INT_MAX;
@@ -112,9 +114,9 @@ class Controller extends BaseController
         }
         return $nearestPosition;
     }
-    private function findAbruptChangePosition($matrix, $searchPosition,$request)
+    private function findAbruptChangePosition($matrix, $searchPosition, $threshold)
     {
-        $threshold = floatval($request->input('threshold'))*100;
+        // $threshold = floatval($request->input('threshold'))*100;
 
         // Starting from the search position, find the first position with an abrupt change in BalanceStart
         for ($i = $searchPosition; $i >= 0; $i--) {
@@ -123,7 +125,7 @@ class Controller extends BaseController
                 $previousBalanceStart = floatval($matrix[$i - 1]['BalanceStart']);
 
                 // Check if there's an abrupt change (e.g., difference greater than a threshold)
-                if (abs($currentBalanceStart - $previousBalanceStart) >$threshold ) {
+                if (abs($currentBalanceStart - $previousBalanceStart) > $threshold) {
                     return $i;
                 }
             }
