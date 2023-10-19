@@ -14,7 +14,7 @@ class Controller extends BaseController
     public function processCsv(Request $request)
     {
         $csvFile = $request->file('csv_file');
-        if (($handle = fopen($csvFile, 'r')) !== FALSE) {
+        if (($handle = fopen($csvFile, 'r')) !== false) {
             // Read the first row to determine the delimiter
             $firstRow = fgetcsv($handle, 1000);
             $delimiter = $this->detectDelimiter($firstRow[0]);
@@ -22,7 +22,7 @@ class Controller extends BaseController
             // Rewind the file pointer to read from the beginning
             rewind($handle);
 
-            while (($data = fgetcsv($handle, 1000, $delimiter)) !== FALSE) {
+            while (($data = fgetcsv($handle, 1000, $delimiter)) !== false) {
                 $csvData[] = $data;
             }
 
@@ -48,7 +48,6 @@ class Controller extends BaseController
             // Assuming the last BalanceStart is 0
             // dd($csvData[$rowCount - 1][5]);
             $balances[] = -$csvData[$rowCount - 1][5];
-
         }
         // dd($balances);
         $matrix = [];
@@ -78,31 +77,37 @@ class Controller extends BaseController
             // dd($abruptChangePosition,$position);
         }
         $games = array_unique(array_column($matrix, 'GameId'));
+        $gamble = array_unique(array_column($matrix, 'Jugadas'));
+        $convertedValues = array_map(function ($value) {
+            // Convert the string to float and divide by 100
+            return (float) $value / 100;
+        }, $gamble);
+        sort($convertedValues);
+        // dd($convertedValues);
+        $parsedValues = array_map(function ($value) {
+            // Explode the string by "G" and parse the second part to an integer
+            return (int) explode('G', $value)[1];
+        }, $games);
+        // dd($parsedValues);
         // dd($games);
         $games2 = Game::all();
         $gamesArray = $games2->toArray();
+
         $gameNames = [];
-        // for ($i = 0; $i < count($games); $i++){
-        //     if ($gamesArray[$i][] == $games[$i]){
-        //     }
-        // }
-        foreach ($games as $gameId) {
-            // Search for the game in the array
-            $gameFromArray = collect($gamesArray)->firstWhere('id', $gameId);
-            // dd($gameFromArray);
-            if ($gameFromArray) {
-                $gameNames[$gameId] =$gameFromArray['name'];
-            } else {
-                // Handle the case where a game with the specified ID is not found
-                $gameNames[$gameId] = 'Unknown Game';
+        foreach ($parsedValues as $parsedValue) {
+            foreach ($gamesArray as $game) {
+                if ($game['id'] === $parsedValue) {
+                    $gameNames[] = $game['name'];
+                }
             }
         }
-        dd($gameNames);
+        // dd($gameNames);
+
         if (count($gameNames) == 1) {
-            $floro = "El usuario tenía un balance de " . $matrix[0]['BalanceStart'] . ", con apuestas de 25.00, 30.00 pesos en el juego " . reset($gameNames) . " , fue aumentando su balance hasta " . floatval($matrix[count($matrix) - 1]['BalanceEnd']) / 100 . " pesos.";
+            $floro = 'El usuario tenía un balance de ' . floatval($matrix[0]['BalanceStart']) / 100 . ', con apuestas de ' . implode(', ', $convertedValues) . ' pesos en el juego ' . reset($gameNames) . ' , fue aumentando su balance hasta ' . floatval($matrix[count($matrix) - 1]['BalanceEnd']) / 100 . ' pesos.';
         } else {
             $lastGame = array_pop($gameNames);
-            $floro = "El usuario tenía un balance de " . $matrix[0]['BalanceStart'] . ", con apuestas de 25.00, 30.00 pesos en los juegos " . implode(', ', $gameNames) . " y " . $lastGame . " , fue aumentando su balance hasta " . floatval($matrix[count($matrix) - 1]['BalanceEnd']) / 100 . " pesos.";
+            $floro = 'El usuario tenía un balance de ' . floatval($matrix[0]['BalanceStart']) / 100 . ', con apuestas de ' . implode(', ', $convertedValues) . ' pesos en los juegos ' . implode(', ', $gameNames) . ' y ' . $lastGame . ' , fue aumentando su balance hasta ' . floatval($matrix[count($matrix) - 1]['BalanceEnd']) / 100 . ' pesos.';
         }
         return view('welcome')
             ->with('matrix', $matrix)
@@ -144,8 +149,6 @@ class Controller extends BaseController
     }
     private function findAbruptChangePosition($matrix, $searchPosition, $threshold)
     {
-        // $threshold = floatval($request->input('threshold'))*100;
-
         // Starting from the search position, find the first position with an abrupt change in BalanceStart
         for ($i = $searchPosition; $i >= 0; $i--) {
             if (isset($matrix[$i]['BalanceStart']) && isset($matrix[$i - 1]['BalanceStart'])) {
@@ -163,5 +166,3 @@ class Controller extends BaseController
         return 0;
     }
 }
-
-

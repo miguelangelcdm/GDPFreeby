@@ -36,8 +36,8 @@
       </div>
     @endif
 
-    <div class="max-w-7xl mx-auto p-6 lg:p-8 flex-row flex gap-x-16">
-      <div class="flex flex-col justify-center">
+    <div class="mx-auto p-6 lg:p-8 flex-row flex gap-x-10">
+      <div class="flex flex-col justify-center" style="width: 30vw">
         <div class="flex justify-center">
           <svg viewBox="0 0 62 65" fill="none" xmlns="http://www.w3.org/2000/svg"
             class="h-16 w-auto bg-gray-100 dark:bg-gray-900">
@@ -48,7 +48,7 @@
         </div>
         <div
           class="scale-100 p-6 bg-white dark:bg-gray-800/50 dark:bg-gradient-to-bl from-gray-700/50 via-transparent dark:ring-1 dark:ring-inset dark:ring-white/5 rounded-lg shadow-2xl shadow-gray-500/20 dark:shadow-none flex motion-safe:hover:scale-[1.01] transition-all duration-250 focus:outline focus:outline-2 focus:outline-red-500 my-6 ">
-          <div>
+          <div style="width:100%">
             <form action="{{ url('/process-csv') }}" method="post" enctype="multipart/form-data">
               @csrf
               <input type="hidden" name="file_path" id="file_path">
@@ -72,7 +72,7 @@
                   class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 dark:text-gray-400 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400"
                   aria-describedby="user_avatar_help" id="user_avatar" type="file" accept=".csv">
                 <div class="mt-1 text-sm text-gray-500 dark:text-gray-300" id="user_avatar_help">Tamaño máximo de
-                  archivo: 10mb</div>
+                  archivo: 5mb</div>
               </div>
               <button type="submit"
                 class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">Procesar</button>
@@ -88,7 +88,6 @@
               <textarea id="message" rows="8"
                 class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
                 {{ $floro }}
-              
               </textarea>
             </div>
           </div>
@@ -97,13 +96,13 @@
       @if (isset($matrix) && !empty($matrix))
         <div class="relative overflow-x-auto shadow-md sm:rounded-lg overflow-auto" style="max-height: 80vh">
           <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-            <caption
+            {{-- <caption
               class="p-5 text-lg font-semibold text-left text-gray-900 bg-white dark:text-white dark:bg-gray-800">
               Hola mundo:
               <p class="mt-1 text-sm font-normal text-gray-500 dark:text-gray-400">Se esta validando desde el balance
                 inicial ___ hasta _____, donde un total de _____ registros filtrados para la validación. Tomesé siempre
                 con precausión el rango asignado por un threshold de 4000 pesos de cambio abrupto en balance.</p>
-            </caption>
+            </caption> --}}
             <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400 sticky top-0">
               <tr>
                 <th scope="col" class="px-6 py-3">GameId</th>
