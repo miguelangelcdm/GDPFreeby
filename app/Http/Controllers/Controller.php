@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Game;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Foundation\Validation\ValidatesRequests;
 use Illuminate\Routing\Controller as BaseController;
@@ -13,8 +14,6 @@ class Controller extends BaseController
     public function processCsv(Request $request)
     {
         $csvFile = $request->file('csv_file');
-
-        $csvData = [];
         if (($handle = fopen($csvFile, 'r')) !== FALSE) {
             // Read the first row to determine the delimiter
             $firstRow = fgetcsv($handle, 1000);
@@ -55,14 +54,13 @@ class Controller extends BaseController
         $matrix = [];
         for ($i = 1; $i < $rowCount; $i++) {
             $matrix[] = [
-                
                 'GameId' => $csvData[$i][1] ?? 'N/A',
                 'BalanceStart' => $csvData[$i][4] ?? 'N/A',
                 'BalanceEnd' => $csvData[$i][5] ?? 'N/A',
                 'Jugadas' => $csvData[$i][6] ?? 'N/A',
                 'GananciaoDeposito' => $csvData[$i][7] ?? 'N/A',
                 '$balances' => $balances[$i] ?? 'N/A',
-                'JugadasGratis' => $csvData[$i][8] ?? 'N/A',
+                'JugadasGratis' => $csvData[$i][9] ?? 'N/A',
                 'Hora' => $csvData[$i][11] ?? 'N/A',
             ];
         }
@@ -76,11 +74,40 @@ class Controller extends BaseController
             // Identify the abrupt change position
             $abruptChangePosition = $this->findAbruptChangePosition($matrix, $position, $threshold);
             // Filter the matrix based on the abrupt change position until search_value position
-            $matrix = array_slice($matrix, $abruptChangePosition - 1, $position);
+            $matrix = array_slice($matrix, $abruptChangePosition - 1, $position - $abruptChangePosition + 2);
             // dd($abruptChangePosition,$position);
         }
-
-        return view('welcome')->with('matrix', $matrix);
+        $games = array_unique(array_column($matrix, 'GameId'));
+        // dd($games);
+        $games2 = Game::all();
+        $gamesArray = $games2->toArray();
+        $gameNames = [];
+        for ($i = 0; $i < count($games); $i++){
+            if ($gamesArray[$i][] == $games[$i]){
+        }
+        // foreach ($games as $gameId) {
+        //     // Search for the game in the array
+        //     $gameFromArray = collect($gamesArray)->firstWhere('id', $gameId);
+        //     // dd($gameFromArray);
+        //     if ($gameFromArray) {
+        //         $gameNames[$gameId] =$gameFromArray['name'];
+        //     } else {
+        //         // Handle the case where a game with the specified ID is not found
+        //         $gameNames[$gameId] = 'Unknown Game';
+        //     }
+        // }
+        dd($gameNames);
+        if (count($gameNames) == 1) {
+            $floro = "El usuario tenía un balance de " . $matrix[0]['BalanceStart'] . ", con apuestas de 25.00, 30.00 pesos en el juego " . reset($gameNames) . " , fue aumentando su balance hasta " . floatval($matrix[count($matrix) - 1]['BalanceEnd']) / 100 . " pesos.";
+        } else {
+            $lastGame = array_pop($gameNames);
+            $floro = "El usuario tenía un balance de " . $matrix[0]['BalanceStart'] . ", con apuestas de 25.00, 30.00 pesos en los juegos " . implode(', ', $gameNames) . " y " . $lastGame . " , fue aumentando su balance hasta " . floatval($matrix[count($matrix) - 1]['BalanceEnd']) / 100 . " pesos.";
+        }
+        return view('welcome')
+            ->with('matrix', $matrix)
+            ->with('searchValue', $searchValue)
+            ->with('threshold', $threshold)
+            ->with('floro', $floro);
     }
     private function detectDelimiter($sampleRow)
     {
