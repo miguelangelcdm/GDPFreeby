@@ -82,20 +82,21 @@ class Controller extends BaseController
         $games2 = Game::all();
         $gamesArray = $games2->toArray();
         $gameNames = [];
-        for ($i = 0; $i < count($games); $i++){
-            if ($gamesArray[$i][] == $games[$i]){
-        }
-        // foreach ($games as $gameId) {
-        //     // Search for the game in the array
-        //     $gameFromArray = collect($gamesArray)->firstWhere('id', $gameId);
-        //     // dd($gameFromArray);
-        //     if ($gameFromArray) {
-        //         $gameNames[$gameId] =$gameFromArray['name'];
-        //     } else {
-        //         // Handle the case where a game with the specified ID is not found
-        //         $gameNames[$gameId] = 'Unknown Game';
+        // for ($i = 0; $i < count($games); $i++){
+        //     if ($gamesArray[$i][] == $games[$i]){
         //     }
         // }
+        foreach ($games as $gameId) {
+            // Search for the game in the array
+            $gameFromArray = collect($gamesArray)->firstWhere('id', $gameId);
+            // dd($gameFromArray);
+            if ($gameFromArray) {
+                $gameNames[$gameId] =$gameFromArray['name'];
+            } else {
+                // Handle the case where a game with the specified ID is not found
+                $gameNames[$gameId] = 'Unknown Game';
+            }
+        }
         dd($gameNames);
         if (count($gameNames) == 1) {
             $floro = "El usuario tenía un balance de " . $matrix[0]['BalanceStart'] . ", con apuestas de 25.00, 30.00 pesos en el juego " . reset($gameNames) . " , fue aumentando su balance hasta " . floatval($matrix[count($matrix) - 1]['BalanceEnd']) / 100 . " pesos.";
@@ -162,3 +163,5 @@ class Controller extends BaseController
         return 0;
     }
 }
+
+
