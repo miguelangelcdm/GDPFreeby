@@ -59,8 +59,8 @@ class Controller extends BaseController
                 'Jugadas' => $csvData[$i][6] ?? 'N/A',
                 'GananciaoDeposito' => $csvData[$i][7] ?? 'N/A',
                 '$balances' => $balances[$i] ?? 'N/A',
-                'JugadasGratis' => $csvData[$i][9] ?? 'N/A',
-                'Hora' => $csvData[$i][11] ?? 'N/A',
+                'JugadasGratis' => $csvData[$i][8] ?? 'N/A',
+                'Hora' => $csvData[$i][10] ?? 'N/A',
             ];
         }
         // Filter the matrix based on the abrupt change until the search_value position
@@ -104,10 +104,10 @@ class Controller extends BaseController
         // dd($gameNames);
 
         if (count($gameNames) == 1) {
-            $floro = 'El usuario tenía un balance de ' . floatval($matrix[0]['BalanceStart']) / 100 . ', con apuestas de ' . implode(', ', $convertedValues) . ' pesos en el juego ' . reset($gameNames) . ' , fue aumentando su balance hasta ' . floatval($matrix[count($matrix) - 1]['BalanceEnd']) / 100 . ' pesos.';
+            $floro ='El usuario [colocar el usuario aquí] tenía un balance inicial de ' . floatval($matrix[0]['BalanceStart']) / 100 . ' pesos, con apuestas de ' . implode(', ', $convertedValues) . ' pesos en el juego ' . reset($gameNames) . ' , fue aumentando su balance hasta ' . floatval($matrix[count($matrix) - 1]['BalanceEnd']) / 100 . ' pesos.';
         } else {
             $lastGame = array_pop($gameNames);
-            $floro = 'El usuario tenía un balance de ' . floatval($matrix[0]['BalanceStart']) / 100 . ', con apuestas de ' . implode(', ', $convertedValues) . ' pesos en los juegos ' . implode(', ', $gameNames) . ' y ' . $lastGame . ' , fue aumentando su balance hasta ' . floatval($matrix[count($matrix) - 1]['BalanceEnd']) / 100 . ' pesos.';
+            $floro = 'El usuario [colocar el usuario aquí] tenía un balance inicial de ' . floatval($matrix[0]['BalanceStart']) / 100 . ' pesos, con apuestas de ' . implode(', ', $convertedValues) . ' pesos en los juegos ' . implode(', ', $gameNames) . ' y ' . $lastGame . ' , fue aumentando su balance hasta ' . floatval($matrix[count($matrix) - 1]['BalanceEnd']) / 100 . ' pesos.';
         }
         return view('welcome')
             ->with('matrix', $matrix)
