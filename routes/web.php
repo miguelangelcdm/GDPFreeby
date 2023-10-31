@@ -16,5 +16,6 @@ use App\Http\Controllers\Controller;
 
 Route::get('/', function () {
     return view('welcome');
-});
+})->name('index');
 Route::post('/process-csv', [Controller::class, 'processCsv']);
+Route::post('/process-csv2', [Controller::class, 'processCsv2']);

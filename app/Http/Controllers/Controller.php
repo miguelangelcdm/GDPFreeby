@@ -3,18 +3,57 @@
 namespace App\Http\Controllers;
 
 use App\Models\Game;
+use App\Models\Validation;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Foundation\Validation\ValidatesRequests;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile as UploadFiles;
 
 class Controller extends BaseController
 {
     use AuthorizesRequests, ValidatesRequests;
+
     public function processCsv(Request $request)
     {
-        $csvFile = $request->file('csv_file');
-        if (($handle = fopen($csvFile, 'r')) !== false) {
+        if ($request->file('csv_file')) {
+            // New file uploaded
+            $csvFile = $request->file('csv_file');
+            // dd($csvFile);
+            $csvFileContent = $this->readCsvContent($csvFile);
+            session(['csv_file_content' => $csvFileContent]);
+            $validation = Validation::first(); // Assuming you have only one record
+            if ($validation) {
+                // If the record exists, increment the "total" field
+                $validation->total = $validation->total ? $validation->total + 1 : 1;
+                $validation->save();
+            } else {
+                // If the record doesn't exist, you may want to create it with "total" set to 1
+                Validation::create(['total' => 1, 'util' => 0]); // Assuming 'util' should also have a default value
+            }
+        } else {
+            // Use the stored file content
+            $csvFileContent = session('csv_file_content');
+            // dd($csvFileContent);
+            // Handle the case where the file content is not available
+            if (!$csvFileContent) {
+                // You might want to handle this case appropriately, such as redirecting back to the upload form.
+                // For example:
+                return redirect()
+                    ->route('index')
+                    ->with('error', 'No CSV file provided.');
+            }
+        }
+
+        // Now you can proceed with $csvFileContent
+        $csvFile = fopen('php://memory', 'r+');
+        foreach ($csvFileContent as $line) {
+            fwrite($csvFile, $line);
+        }
+        rewind($csvFile);
+
+        // Continue with the rest of your CSV processing logic
+        if (($handle = $csvFile) !== false) {
             // Read the first row to determine the delimiter
             $firstRow = fgetcsv($handle, 1000);
             $delimiter = $this->detectDelimiter($firstRow[0]);
@@ -29,6 +68,159 @@ class Controller extends BaseController
             fclose($handle);
         }
         $threshold = floatval($request->input('threshold')) * 100;
+
+        // fgetcsv( resource $handle [, int $length = 0 [, string $delimiter = "," [, string $enclosure = '"' [, string $escape = "\" ]]]]): array
+        // dd($csvData);
+        $balances = [];
+        $rowCount = count($csvData);
+        $balances[] = 0;
+        for ($i = 1; $i < $rowCount - 1; $i++) {
+            $currentBalanceEnd = isset($csvData[$i][5]) ? floatval($csvData[$i][5]) : 0;
+            $nextBalanceStart = isset($csvData[$i + 1][4]) ? floatval($csvData[$i + 1][4]) : 0;
+            $balanceDifference = $nextBalanceStart - $currentBalanceEnd;
+            $balances[] = $balanceDifference;
+        }
+
+        // Handle the last row
+        // $var1=$csvData[$rowCount-1][5];
+        // dd($var1);
+        if ($rowCount > 0 && isset($csvData[$rowCount - 1][5])) {
+            // Assuming the last BalanceStart is 0
+            // dd($csvData[$rowCount - 1][5]);
+            $balances[] = -$csvData[$rowCount - 1][5];
+        }
+        // dd($balances);
+        $matrix = [];
+        for ($i = 1; $i < $rowCount; $i++) {
+            $matrix[] = [
+                'GameId' => $csvData[$i][1] ?? 'N/A',
+                'BalanceStart' => $csvData[$i][4] ?? 'N/A',
+                'BalanceEnd' => $csvData[$i][5] ?? 'N/A',
+                'Jugadas' => $csvData[$i][6] ?? 'N/A',
+                'GananciaoDeposito' => $csvData[$i][7] ?? 'N/A',
+                '$balances' => $balances[$i] ?? 'N/A',
+                'JugadasGratis' => $csvData[$i][8] ?? 'N/A',
+                'Hora' => $csvData[$i][10] ?? 'N/A',
+            ];
+        }
+        // Filter the matrix based on the abrupt change until the search_value position
+        $searchValue = floatval($request->input('search_value')) * -100;
+        if ($searchValue !== null) {
+            // $searchValue = floatval($searchValue) * -1;
+            // Find the position of the row where search_value is located
+            // $position = array_search($searchValue, array_column($matrix, '$balances'));
+            $position = $this->findNearestPosition($matrix, '$balances', $searchValue);
+            // Identify the abrupt change position
+            $abruptChangePosition = $this->findAbruptChangePosition($matrix, $position, $threshold);
+            // Filter the matrix based on the abrupt change position until search_value position
+            $matrix = array_slice($matrix, $abruptChangePosition - 1, $position - $abruptChangePosition + 2);
+            // dd($abruptChangePosition,$position);
+        }
+        $games = array_unique(array_column($matrix, 'GameId'));
+        $gamble = array_unique(array_column($matrix, 'Jugadas'));
+        $convertedValues = array_map(function ($value) {
+            // Convert the string to float and divide by 100
+            return (float) $value / 100;
+        }, $gamble);
+        sort($convertedValues);
+        // dd($convertedValues);
+        $parsedValues = array_map(function ($value) {
+            // Explode the string by "G" and parse the second part to an integer
+            return (int) explode('G', $value)[1];
+        }, $games);
+        // dd($parsedValues);
+        // dd($games);
+        $games2 = Game::all();
+        $gamesArray = $games2->toArray();
+
+        // $gameNames = [];
+        // foreach ($parsedValues as $parsedValue) {
+        //     foreach ($gamesArray as $game) {
+        //         if ($game['id'] === $parsedValue) {
+        //             $gameNames[] = $game['name'];
+        //         }
+        //     }
+        // }
+        $gameNames = [];
+        foreach ($parsedValues as $parsedValue) {
+            $found = false; // Flag to check if $parsedValue is found
+            foreach ($gamesArray as $game) {
+                if ($game['id'] === $parsedValue) {
+                    $gameNames[] = $game['name'];
+                    $found = true;
+                    break; // No need to continue checking once found
+                }
+            }
+            if ($found == false) {
+                $gameNames[] = $parsedValue; // Add $parsedValue if not found in $gamesArray
+            }
+        }
+        // dd($gameNames);
+
+        if (count($gameNames) == 1) {
+            $floro = 'El usuario [colocar el usuario aquí] tenía un balance inicial de ' . floatval($matrix[0]['BalanceStart']) / 100 . ' pesos, con apuestas de ' . implode(', ', $convertedValues) . ' pesos en el juego ' . reset($gameNames) . ' , fue aumentando su balance hasta ' . floatval($matrix[count($matrix) - 1]['BalanceEnd']) / 100 . ' pesos.';
+        } else {
+            $lastGame = array_pop($gameNames);
+            $floro = 'El usuario [colocar el usuario aquí] tenía un balance inicial de ' . floatval($matrix[0]['BalanceStart']) / 100 . ' pesos, con apuestas de ' . implode(', ', $convertedValues) . ' pesos en los juegos ' . implode(', ', $gameNames) . ' y ' . $lastGame . ' , fue aumentando su balance hasta ' . floatval($matrix[count($matrix) - 1]['BalanceEnd']) / 100 . ' pesos.';
+        }
+
+        $request->session()->put('processedData', [
+            'matrix' => $matrix,
+            'searchValue' => $searchValue,
+            'threshold' => $threshold,
+            'floro' => $floro,
+        ]);
+        return view('results')
+            ->with('matrix', $matrix)
+            ->with('searchValue', $searchValue)
+            ->with('threshold', $threshold)
+            ->with('floro', $floro);
+    }
+    public function processCsv2(Request $request)
+    {
+        if ($request->file('csv_file')) {
+            // New file uploaded
+            $csvFile = $request->file('csv_file');
+            $csvFileContent = $this->readCsvContent($csvFile);
+            session(['csv_file_content' => $csvFileContent]);
+        } else {
+            // Use the stored file content
+            $csvFileContent = session('csv_file_content');
+
+            // Handle the case where the file content is not available
+            if (!$csvFileContent) {
+                // You might want to handle this case appropriately, such as redirecting back to the upload form.
+                // For example:
+                return redirect()
+                    ->route('index')
+                    ->with('error', 'No CSV file provided.');
+            }
+        }
+
+        // Now you can proceed with $csvFileContent
+        $csvFile = fopen('php://memory', 'r+');
+        foreach ($csvFileContent as $line) {
+            fwrite($csvFile, $line);
+        }
+        rewind($csvFile);
+
+        // Continue with the rest of your CSV processing logic
+        if (($handle = $csvFile) !== false) {
+            // Read the first row to determine the delimiter
+            $firstRow = fgetcsv($handle, 1000);
+            $delimiter = $this->detectDelimiter($firstRow[0]);
+
+            // Rewind the file pointer to read from the beginning
+            rewind($handle);
+
+            while (($data = fgetcsv($handle, 1000, $delimiter)) !== false) {
+                $csvData[] = $data;
+            }
+
+            fclose($handle);
+        }
+        $threshold = floatval($request->input('threshold')) * 100;
+
         // fgetcsv( resource $handle [, int $length = 0 [, string $delimiter = "," [, string $enclosure = '"' [, string $escape = "\" ]]]]): array
         // dd($csvData);
         $balances = [];
@@ -104,16 +296,38 @@ class Controller extends BaseController
         // dd($gameNames);
 
         if (count($gameNames) == 1) {
-            $floro ='El usuario [colocar el usuario aquí] tenía un balance inicial de ' . floatval($matrix[0]['BalanceStart']) / 100 . ' pesos, con apuestas de ' . implode(', ', $convertedValues) . ' pesos en el juego ' . reset($gameNames) . ' , fue aumentando su balance hasta ' . floatval($matrix[count($matrix) - 1]['BalanceEnd']) / 100 . ' pesos.';
+            $floro = 'El usuario [colocar el usuario aquí] tenía un balance inicial de ' . floatval($matrix[0]['BalanceStart']) / 100 . ' pesos, con apuestas de ' . implode(', ', $convertedValues) . ' pesos en el juego ' . reset($gameNames) . ' , fue aumentando su balance hasta ' . floatval($matrix[count($matrix) - 1]['BalanceEnd']) / 100 . ' pesos.';
         } else {
             $lastGame = array_pop($gameNames);
             $floro = 'El usuario [colocar el usuario aquí] tenía un balance inicial de ' . floatval($matrix[0]['BalanceStart']) / 100 . ' pesos, con apuestas de ' . implode(', ', $convertedValues) . ' pesos en los juegos ' . implode(', ', $gameNames) . ' y ' . $lastGame . ' , fue aumentando su balance hasta ' . floatval($matrix[count($matrix) - 1]['BalanceEnd']) / 100 . ' pesos.';
         }
-        return view('welcome')
+
+        $request->session()->put('processedData', [
+            'matrix' => $matrix,
+            'searchValue' => $searchValue,
+            'threshold' => $threshold,
+            'floro' => $floro,
+        ]);
+        return view('results')
             ->with('matrix', $matrix)
             ->with('searchValue', $searchValue)
             ->with('threshold', $threshold)
             ->with('floro', $floro);
+    }
+    // public function processCsvnewthreshold(Request $request){
+
+    // }
+    public function readCsvContent($file)
+    {
+        // Check if $file is an instance of UploadedFile
+        if ($file instanceof UploadFiles) {
+            $filePath = $file->path();
+            // dd($filePath);
+            return file($filePath);
+        } else {
+            // Assume $file is an array containing CSV content
+            return $file;
+        }
     }
     private function detectDelimiter($sampleRow)
     {
