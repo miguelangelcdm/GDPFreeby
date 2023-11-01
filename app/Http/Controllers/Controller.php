@@ -191,9 +191,10 @@ class Controller extends BaseController
             if (!$csvFileContent) {
                 // You might want to handle this case appropriately, such as redirecting back to the upload form.
                 // For example:
-                return redirect()
-                    ->route('index')
-                    ->with('error', 'No CSV file provided.');
+                // return redirect()
+                //     ->route('index')
+                //     ->with('error', 'No CSV file provided.');
+                return view('welcome')->with('error', session('error'));
             }
         }
 
@@ -314,9 +315,26 @@ class Controller extends BaseController
             ->with('threshold', $threshold)
             ->with('floro', $floro);
     }
-    // public function processCsvnewthreshold(Request $request){
+    public function utilstorage()
+    {
+        $util = false;
+        $validation = Validation::first(); // Assuming you have only one record
 
-    // }
+        if ($validation) {
+            // If the record exists, increment the "util" field
+            $validation->util = $validation->util ? $validation->util + 1 : 1;
+            $validation->save();
+            $util = true;
+        } else {
+            // If the record doesn't exist, create it with "util" set to 1
+            $validation = Validation::create(['total' => 0, 'util' => 1]); // Assuming 'util' should have a default value of 1
+            $util = true;
+        }
+
+        // Pass the 'util' variable directly to the view using compact
+        return view('welcome', compact('util'));
+    }
+
     public function readCsvContent($file)
     {
         // Check if $file is an instance of UploadedFile

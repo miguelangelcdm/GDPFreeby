@@ -18,7 +18,7 @@
 <body class="dark-mode antialiased">
   <div
     class="relative sm:flex sm:justify-center sm:items-center min-h-screen bg-dots-darker bg-center bg-gray-100 dark:bg-dots-lighter dark:bg-gray-900 selection:bg-red-500 selection:text-white">
-    @if (Route::has('login'))
+    {{-- @if (Route::has('login'))
       <div class="sm:fixed sm:top-0 sm:right-0 p-6 text-right z-10">
         @auth
           <a href="{{ url('/home') }}"
@@ -34,7 +34,19 @@
           @endif
         @endauth
       </div>
+    @endif --}}
+    @if (session('error'))
+      <div class="p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400" role="alert">
+        <span class="font-medium">Alert!</span> No se cargo ningún archivo válido.
+      </div>
     @endif
+    @if (isset($util) && $util)
+      <div class="p-4 mb-4 text-sm text-green-800 rounded-lg bg-green-300 dark:bg-gray-800 dark:text-green-400"
+        role="alert" style="position: absolute;z-index: 1;top: 0;">
+        <span class="font-medium">Success alert!</span> Gracias por el feedback.
+      </div>
+    @endif
+
 
     <div class="mx-auto p-6 lg:p-8 flex-row flex gap-x-10 flex flex-col">
       <div class="flex flex-col justify-center" style="width: 30vw">
@@ -55,24 +67,38 @@
               <div class="mb-6">
                 <label for="email" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Especifique
                   el monto de retiro a validar:</label>
-                <input  name="search_value" value="{{ isset($searchValue) ? $searchValue/-100 : null }}"
+                <input name="search_value" value="{{ isset($searchValue) ? $searchValue / -100 : null }}"
                   class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                   required>
               </div>
               <div class="mb-6">
                 <label for="email" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Especifique
                   el threshold para la validación:</label>
-                <input type="number" name="threshold" value="{{ isset($threshold) ? $threshold/100 : null}}"
+                <input type="number" name="threshold" value="{{ isset($threshold) ? $threshold / 100 : null }}"
                   class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                   required>
               </div>
               <div class="mb-6">
-                <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white" for="user_avatar">Cargar archivo CSV</label>
-                <input name="csv_file" value="{{ session('csv_file') }}"
+
+                <div class="flex items-center justify-center w-full">
+                  <label class="block mx-4 w-full">
+                    <span class="sr-only">Subir archivo</span>
+                    <input type="file" name="csv_file"
+                      class="block w-full text-sm text-gray-500
+                      file:mr-4 file:py-2 file:px-4
+                      file:rounded-md file:border-0
+                      file:text-sm file:font-semibold
+                      file:bg-blue-500 file:text-white
+                      hover:file:bg-blue-600
+                    " />
+                  </label>
+                </div>
+
+                {{-- <input name="csv_file" value="{{ session('csv_file') }}"
                   class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 dark:text-gray-400 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400"
                   aria-describedby="user_avatar_help" id="user_avatar" type="file" accept=".csv">
                 <div class="mt-1 text-sm text-gray-500 dark:text-gray-300" id="user_avatar_help">Tamaño máximo de
-                  archivo: 5mb</div>
+                  archivo: 5mb</div> --}}
               </div>
               <button type="submit"
                 class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">Procesar</button>
