@@ -94,6 +94,7 @@ class Controller extends BaseController
         for ($i = 1; $i < $rowCount; $i++) {
             $matrix[] = [
                 'GameId' => $csvData[$i][1] ?? 'N/A',
+                // 'GInstance' => number_format($csvData[$i][2], 2, '.', '') ?? 'N/A',
                 'BalanceStart' => $csvData[$i][4] ?? 'N/A',
                 'BalanceEnd' => $csvData[$i][5] ?? 'N/A',
                 'Jugadas' => $csvData[$i][6] ?? 'N/A',
@@ -103,12 +104,11 @@ class Controller extends BaseController
                 'Hora' => $csvData[$i][10] ?? 'N/A',
             ];
         }
+        // dd($matrix);
         // Filter the matrix based on the abrupt change until the search_value position
         $searchValue = floatval($request->input('search_value')) * -100;
         if ($searchValue !== null) {
-            // $searchValue = floatval($searchValue) * -1;
             // Find the position of the row where search_value is located
-            // $position = array_search($searchValue, array_column($matrix, '$balances'));
             $position = $this->findNearestPosition($matrix, '$balances', $searchValue);
             // Identify the abrupt change position
             $abruptChangePosition = $this->findAbruptChangePosition($matrix, $position, $threshold);
@@ -132,15 +132,6 @@ class Controller extends BaseController
         // dd($games);
         $games2 = Game::all();
         $gamesArray = $games2->toArray();
-
-        // $gameNames = [];
-        // foreach ($parsedValues as $parsedValue) {
-        //     foreach ($gamesArray as $game) {
-        //         if ($game['id'] === $parsedValue) {
-        //             $gameNames[] = $game['name'];
-        //         }
-        //     }
-        // }
         $gameNames = [];
         foreach ($parsedValues as $parsedValue) {
             $found = false; // Flag to check if $parsedValue is found
@@ -155,8 +146,6 @@ class Controller extends BaseController
                 $gameNames[] = $parsedValue; // Add $parsedValue if not found in $gamesArray
             }
         }
-        // dd($gameNames);
-
         if (count($gameNames) == 1) {
             $floro = 'El usuario [colocar el usuario aquí] tenía un balance inicial de ' . floatval($matrix[0]['BalanceStart']) / 100 . ' pesos, con apuestas de ' . implode(', ', $convertedValues) . ' pesos en el juego ' . reset($gameNames) . ' , fue aumentando su balance hasta ' . floatval($matrix[count($matrix) - 1]['BalanceEnd']) / 100 . ' pesos.';
         } else {

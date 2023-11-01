@@ -18,23 +18,6 @@
 <body class="dark-mode antialiased">
   <div
     class="relative sm:flex sm:justify-center sm:items-center min-h-screen bg-dots-darker bg-center bg-gray-100 dark:bg-dots-lighter dark:bg-gray-900 selection:bg-red-500 selection:text-white">
-    {{-- @if (Route::has('login'))
-      <div class="sm:fixed sm:top-0 sm:right-0 p-6 text-right z-10">
-        @auth
-          <a href="{{ url('/home') }}"
-            class="font-semibold text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white focus:outline focus:outline-2 focus:rounded-sm focus:outline-red-500">Home</a>
-        @else
-          <a href="{{ route('login') }}"
-            class="font-semibold text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white focus:outline focus:outline-2 focus:rounded-sm focus:outline-red-500">Log
-            in</a>
-
-          @if (Route::has('register'))
-            <a href="{{ route('register') }}"
-              class="ml-4 font-semibold text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white focus:outline focus:outline-2 focus:rounded-sm focus:outline-red-500">Register</a>
-          @endif
-        @endauth
-      </div>
-    @endif --}}
     @if (session('error'))
       <div class="p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400" role="alert">
         <span class="font-medium">Alert!</span> No se cargo ningún archivo válido.
@@ -46,10 +29,8 @@
         <span class="font-medium">Success alert!</span> Gracias por el feedback.
       </div>
     @endif
-
-
     <div class="mx-auto p-6 lg:p-8 flex-row flex gap-x-10 flex flex-col">
-      <div class="flex flex-col justify-center" style="width: 30vw">
+      <div class="flex flex-col justify-center">
         <div class="flex justify-center">
           <svg viewBox="0 0 62 65" fill="none" xmlns="http://www.w3.org/2000/svg"
             class="h-16 w-auto bg-gray-100 dark:bg-gray-900">
@@ -93,12 +74,6 @@
                     " />
                   </label>
                 </div>
-
-                {{-- <input name="csv_file" value="{{ session('csv_file') }}"
-                  class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 dark:text-gray-400 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400"
-                  aria-describedby="user_avatar_help" id="user_avatar" type="file" accept=".csv">
-                <div class="mt-1 text-sm text-gray-500 dark:text-gray-300" id="user_avatar_help">Tamaño máximo de
-                  archivo: 5mb</div> --}}
               </div>
               <button type="submit"
                 class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">Procesar</button>
@@ -123,15 +98,18 @@
       <div class="flex justify-center mt-16 px-0 sm:items-center sm:justify-between">
         <div class="text-center text-sm text-gray-500 dark:text-gray-400 sm:text-left">
           <div class="flex items-center gap-4">
-            <a href="https://github.com/sponsors/taylorotwell"
+            <a href="https://www.linkedin.com/in/dayana-sophia-paz-alejos"
               class="group inline-flex items-center hover:text-gray-700 dark:hover:text-white focus:outline focus:outline-2 focus:rounded-sm focus:outline-red-500">
-              Espero les sirva :)
+               <em>Espero les sirva :)</em> 
             </a>
           </div>
         </div>
 
-        <div class="ml-4 text-center text-sm text-gray-500 dark:text-gray-400 sm:text-right sm:ml-0">
+        {{-- <div class="ml-4 text-center text-sm text-gray-500 dark:text-gray-400 sm:text-right sm:ml-0">
           Laravel v{{ Illuminate\Foundation\Application::VERSION }} (PHP v{{ PHP_VERSION }})
+        </div> --}}
+        <div class="ml-4 text-center text-sm text-gray-500 dark:text-gray-400 sm:text-right sm:ml-0">
+          GDP Studios
         </div>
       </div>
     </div>
