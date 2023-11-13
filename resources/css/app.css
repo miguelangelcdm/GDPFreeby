@@ -27,3 +27,17 @@
   background: linear-gradient(rgba(243, 244, 246, 0), rgba(243, 244, 246, 0.1)); /* Use a gradient for fading effect */
   pointer-events: none; /* Allow clicks to pass through the pseudo-element */
 }
+
+@keyframes fadeOut {
+  0% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+.vanish {
+  animation: fadeOut 3s forwards;
+  animation-delay: 1.5s;
+}

@@ -2,7 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Controller;
-
+use App\Models\Validation;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -15,8 +15,10 @@ use App\Http\Controllers\Controller;
 */
 
 Route::get('/', function () {
-    return view('welcome');
+    $validationInstance = Validation::first();
+    $valtotales = $validationInstance->total;
+    // dd($valtotales);
+    return view('welcome')->with('valtotales', $valtotales);
 })->name('index');
 Route::post('/process-csv', [Controller::class, 'processCsv']);
-Route::post('/process-csv2', [Controller::class, 'processCsv2']);
-Route::post('/utilstorage', [Controller::class, 'utilstorage']);
+Route::post('/', [Controller::class, 'utilstorage']);

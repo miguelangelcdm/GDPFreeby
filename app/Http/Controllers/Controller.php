@@ -13,7 +13,6 @@ use Illuminate\Http\UploadedFile as UploadFiles;
 class Controller extends BaseController
 {
     use AuthorizesRequests, ValidatesRequests;
-
     public function processCsv(Request $request)
     {
         if ($request->file('csv_file')) {
@@ -94,7 +93,6 @@ class Controller extends BaseController
         for ($i = 1; $i < $rowCount; $i++) {
             $matrix[] = [
                 'GameId' => $csvData[$i][1] ?? 'N/A',
-                // 'GInstance' => number_format($csvData[$i][2], 2, '.', '') ?? 'N/A',
                 'BalanceStart' => $csvData[$i][4] ?? 'N/A',
                 'BalanceEnd' => $csvData[$i][5] ?? 'N/A',
                 'Jugadas' => $csvData[$i][6] ?? 'N/A',
@@ -102,6 +100,7 @@ class Controller extends BaseController
                 '$balances' => $balances[$i] ?? 'N/A',
                 'JugadasGratis' => $csvData[$i][8] ?? 'N/A',
                 'Hora' => $csvData[$i][10] ?? 'N/A',
+                'ObjectId'=> $csvData[$i][11] ??'N/A',
             ];
         }
         // dd($matrix);
@@ -146,164 +145,43 @@ class Controller extends BaseController
                 $gameNames[] = $parsedValue; // Add $parsedValue if not found in $gamesArray
             }
         }
-        if (count($gameNames) == 1) {
-            $floro = 'El usuario [colocar el usuario aquí] tenía un balance inicial de ' . floatval($matrix[0]['BalanceStart']) / 100 . ' pesos, con apuestas de ' . implode(', ', $convertedValues) . ' pesos en el juego ' . reset($gameNames) . ' , fue aumentando su balance hasta ' . floatval($matrix[count($matrix) - 1]['BalanceEnd']) / 100 . ' pesos.';
-        } else {
-            $lastGame = array_pop($gameNames);
-            $floro = 'El usuario [colocar el usuario aquí] tenía un balance inicial de ' . floatval($matrix[0]['BalanceStart']) / 100 . ' pesos, con apuestas de ' . implode(', ', $convertedValues) . ' pesos en los juegos ' . implode(', ', $gameNames) . ' y ' . $lastGame . ' , fue aumentando su balance hasta ' . floatval($matrix[count($matrix) - 1]['BalanceEnd']) / 100 . ' pesos.';
-        }
-
+        $currency = $request->input('currency');
+        
         $request->session()->put('processedData', [
             'matrix' => $matrix,
             'searchValue' => $searchValue,
             'threshold' => $threshold,
-            'floro' => $floro,
+            'floro' => $this->floro($gameNames,$currency,$matrix,$convertedValues),
         ]);
+        $validationInstance = Validation::first();
+        $valtotales = $validationInstance->total;
         return view('results')
             ->with('matrix', $matrix)
             ->with('searchValue', $searchValue)
             ->with('threshold', $threshold)
-            ->with('floro', $floro);
+            ->with('floro', $this->floro($gameNames,$currency,$matrix,$convertedValues))
+            ->with('valtotales',$valtotales);
+
     }
-    public function processCsv2(Request $request)
-    {
-        if ($request->file('csv_file')) {
-            // New file uploaded
-            $csvFile = $request->file('csv_file');
-            $csvFileContent = $this->readCsvContent($csvFile);
-            session(['csv_file_content' => $csvFileContent]);
-        } else {
-            // Use the stored file content
-            $csvFileContent = session('csv_file_content');
 
-            // Handle the case where the file content is not available
-            if (!$csvFileContent) {
-                // You might want to handle this case appropriately, such as redirecting back to the upload form.
-                // For example:
-                // return redirect()
-                //     ->route('index')
-                //     ->with('error', 'No CSV file provided.');
-                return view('welcome')->with('error', session('error'));
-            }
-        }
-
-        // Now you can proceed with $csvFileContent
-        $csvFile = fopen('php://memory', 'r+');
-        foreach ($csvFileContent as $line) {
-            fwrite($csvFile, $line);
-        }
-        rewind($csvFile);
-
-        // Continue with the rest of your CSV processing logic
-        if (($handle = $csvFile) !== false) {
-            // Read the first row to determine the delimiter
-            $firstRow = fgetcsv($handle, 1000);
-            $delimiter = $this->detectDelimiter($firstRow[0]);
-
-            // Rewind the file pointer to read from the beginning
-            rewind($handle);
-
-            while (($data = fgetcsv($handle, 1000, $delimiter)) !== false) {
-                $csvData[] = $data;
-            }
-
-            fclose($handle);
-        }
-        $threshold = floatval($request->input('threshold')) * 100;
-
-        // fgetcsv( resource $handle [, int $length = 0 [, string $delimiter = "," [, string $enclosure = '"' [, string $escape = "\" ]]]]): array
-        // dd($csvData);
-        $balances = [];
-        $rowCount = count($csvData);
-        $balances[] = 0;
-        for ($i = 1; $i < $rowCount - 1; $i++) {
-            $currentBalanceEnd = isset($csvData[$i][5]) ? floatval($csvData[$i][5]) : 0;
-            $nextBalanceStart = isset($csvData[$i + 1][4]) ? floatval($csvData[$i + 1][4]) : 0;
-            $balanceDifference = $nextBalanceStart - $currentBalanceEnd;
-            $balances[] = $balanceDifference;
-        }
-
-        // Handle the last row
-        // $var1=$csvData[$rowCount-1][5];
-        // dd($var1);
-        if ($rowCount > 0 && isset($csvData[$rowCount - 1][5])) {
-            // Assuming the last BalanceStart is 0
-            // dd($csvData[$rowCount - 1][5]);
-            $balances[] = -$csvData[$rowCount - 1][5];
-        }
-        // dd($balances);
-        $matrix = [];
-        for ($i = 1; $i < $rowCount; $i++) {
-            $matrix[] = [
-                'GameId' => $csvData[$i][1] ?? 'N/A',
-                'BalanceStart' => $csvData[$i][4] ?? 'N/A',
-                'BalanceEnd' => $csvData[$i][5] ?? 'N/A',
-                'Jugadas' => $csvData[$i][6] ?? 'N/A',
-                'GananciaoDeposito' => $csvData[$i][7] ?? 'N/A',
-                '$balances' => $balances[$i] ?? 'N/A',
-                'JugadasGratis' => $csvData[$i][8] ?? 'N/A',
-                'Hora' => $csvData[$i][10] ?? 'N/A',
-            ];
-        }
-        // Filter the matrix based on the abrupt change until the search_value position
-        $searchValue = floatval($request->input('search_value')) * -100;
-        if ($searchValue !== null) {
-            // $searchValue = floatval($searchValue) * -1;
-            // Find the position of the row where search_value is located
-            // $position = array_search($searchValue, array_column($matrix, '$balances'));
-            $position = $this->findNearestPosition($matrix, '$balances', $searchValue);
-            // Identify the abrupt change position
-            $abruptChangePosition = $this->findAbruptChangePosition($matrix, $position, $threshold);
-            // Filter the matrix based on the abrupt change position until search_value position
-            $matrix = array_slice($matrix, $abruptChangePosition - 1, $position - $abruptChangePosition + 2);
-            // dd($abruptChangePosition,$position);
-        }
-        $games = array_unique(array_column($matrix, 'GameId'));
-        $gamble = array_unique(array_column($matrix, 'Jugadas'));
-        $convertedValues = array_map(function ($value) {
-            // Convert the string to float and divide by 100
-            return (float) $value / 100;
-        }, $gamble);
-        sort($convertedValues);
-        // dd($convertedValues);
-        $parsedValues = array_map(function ($value) {
-            // Explode the string by "G" and parse the second part to an integer
-            return (int) explode('G', $value)[1];
-        }, $games);
-        // dd($parsedValues);
-        // dd($games);
-        $games2 = Game::all();
-        $gamesArray = $games2->toArray();
-
-        $gameNames = [];
-        foreach ($parsedValues as $parsedValue) {
-            foreach ($gamesArray as $game) {
-                if ($game['id'] === $parsedValue) {
-                    $gameNames[] = $game['name'];
-                }
-            }
-        }
-        // dd($gameNames);
-
+    public function floro($gameNames,$currency,$matrix,$convertedValues){
         if (count($gameNames) == 1) {
-            $floro = 'El usuario [colocar el usuario aquí] tenía un balance inicial de ' . floatval($matrix[0]['BalanceStart']) / 100 . ' pesos, con apuestas de ' . implode(', ', $convertedValues) . ' pesos en el juego ' . reset($gameNames) . ' , fue aumentando su balance hasta ' . floatval($matrix[count($matrix) - 1]['BalanceEnd']) / 100 . ' pesos.';
+            if ($currency==1) {
+                $floro = 'El usuario <colocar el usuario aquí> tenía un balance inicial de ' . floatval($matrix[0]['BalanceStart']) / 100 . ' pesos, con apuestas de ' . implode(', ', $convertedValues) . ' pesos en el juego ' . reset($gameNames) . ' , fue aumentando su balance hasta ' . floatval($matrix[count($matrix) - 1]['BalanceEnd']) / 100 . ' pesos.';
+            }else{
+                $floro = 'El usuario <colocar el usuario aquí> tenía un balance inicial de ' . floatval($matrix[0]['BalanceStart']) / 100 . ' soles, con apuestas de ' . implode(', ', $convertedValues) . ' soles en el juego ' . reset($gameNames) . ' , fue aumentando su balance hasta ' . floatval($matrix[count($matrix) - 1]['BalanceEnd']) / 100 . ' soles. Es conforme';
+            }
         } else {
             $lastGame = array_pop($gameNames);
-            $floro = 'El usuario [colocar el usuario aquí] tenía un balance inicial de ' . floatval($matrix[0]['BalanceStart']) / 100 . ' pesos, con apuestas de ' . implode(', ', $convertedValues) . ' pesos en los juegos ' . implode(', ', $gameNames) . ' y ' . $lastGame . ' , fue aumentando su balance hasta ' . floatval($matrix[count($matrix) - 1]['BalanceEnd']) / 100 . ' pesos.';
+            if ($currency==1) {
+                $floro = 'El usuario <colocar el usuario aquí> tenía un balance inicial de ' . floatval($matrix[0]['BalanceStart']) / 100 . ' pesos, con apuestas de ' . implode(', ', $convertedValues) . ' pesos en los juegos ' . implode(', ', $gameNames) . ' y ' . $lastGame . ' , fue aumentando su balance hasta ' . floatval($matrix[count($matrix) - 1]['BalanceEnd']) / 100 . ' pesos.';
+            }else{
+                $floro = 'El usuario <colocar el usuario aquí> tenía un balance inicial de ' . floatval($matrix[0]['BalanceStart']) / 100 . ' soles, con apuestas de ' . implode(', ', $convertedValues) . ' soles en los juegos ' . implode(', ', $gameNames) . ' y ' . $lastGame . ' , fue aumentando su balance hasta ' . floatval($matrix[count($matrix) - 1]['BalanceEnd']) / 100 . ' soles. Es conforme';
+            }
         }
-
-        $request->session()->put('processedData', [
-            'matrix' => $matrix,
-            'searchValue' => $searchValue,
-            'threshold' => $threshold,
-            'floro' => $floro,
-        ]);
-        return view('results')
-            ->with('matrix', $matrix)
-            ->with('searchValue', $searchValue)
-            ->with('threshold', $threshold)
-            ->with('floro', $floro);
+        return $floro;
     }
+
     public function utilstorage()
     {
         $util = false;
@@ -319,11 +197,10 @@ class Controller extends BaseController
             $validation = Validation::create(['total' => 0, 'util' => 1]); // Assuming 'util' should have a default value of 1
             $util = true;
         }
-
+        $valtotales = $validation->total;
         // Pass the 'util' variable directly to the view using compact
-        return view('welcome', compact('util'));
+        return view('welcome', compact('util'),compact('valtotales'));
     }
-
     public function readCsvContent($file)
     {
         // Check if $file is an instance of UploadedFile

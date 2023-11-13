@@ -5,7 +5,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <title>Laravel</title>
+  <title>GDP Easy Validator</title>
 
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.bunny.net">
@@ -16,21 +16,42 @@
 </head>
 
 <body class="dark-mode antialiased">
+  <div class="mb-5 p-4 absolute z-10">
+    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Validaciones Totales: {{ $valtotales }}</p>
+    {{-- <div class="flex flex-col justify-center ml-3">
+      <input type="checkbox" name="light-switch" class="light-switch sr-only" />
+      <label class="relative cursor-pointer p-2" for="light-switch">
+        <svg class="dark:hidden" width="16" height="16" xmlns="http://www.w3.org/2000/svg">
+          <path class="fill-slate-300"
+            d="M7 0h2v2H7zM12.88 1.637l1.414 1.415-1.415 1.413-1.413-1.414zM14 7h2v2h-2zM12.95 14.433l-1.414-1.413 1.413-1.415 1.415 1.414zM7 14h2v2H7zM2.98 14.364l-1.413-1.415 1.414-1.414 1.414 1.415zM0 7h2v2H0zM3.05 1.706 4.463 3.12 3.05 4.535 1.636 3.12z" />
+          <path class="fill-slate-400" d="M8 4C5.8 4 4 5.8 4 8s1.8 4 4 4 4-1.8 4-4-1.8-4-4-4Z" />
+        </svg>
+        <svg class="hidden dark:block" width="16" height="16" xmlns="http://www.w3.org/2000/svg">
+          <path class="fill-slate-400"
+            d="M6.2 1C3.2 1.8 1 4.6 1 7.9 1 11.8 4.2 15 8.1 15c3.3 0 6-2.2 6.9-5.2C9.7 11.2 4.8 6.3 6.2 1Z" />
+          <path class="fill-slate-500"
+            d="M12.5 5a.625.625 0 0 1-.625-.625 1.252 1.252 0 0 0-1.25-1.25.625.625 0 1 1 0-1.25 1.252 1.252 0 0 0 1.25-1.25.625.625 0 1 1 1.25 0c.001.69.56 1.249 1.25 1.25a.625.625 0 1 1 0 1.25c-.69.001-1.249.56-1.25 1.25A.625.625 0 0 1 12.5 5Z" />
+        </svg>
+        <span class="sr-only">Switch to light / dark version</span>
+      </label>
+    </div> --}}
+  </div>
   <div
-    class="relative sm:flex sm:justify-center sm:items-center min-h-screen bg-dots-darker bg-center bg-gray-100 dark:bg-dots-lighter dark:bg-gray-900 selection:bg-red-500 selection:text-white">
+    class="relative sm:flex sm:justify-center sm:items-center min-h-screen bg-dots-darker bg-center bg-gray-100 dark:bg-dots-lighter dark:bg-gray-900 selection:bg-red-500 selection:text-white flex-col justify-end">
     @if (session('error'))
       <div class="p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400" role="alert">
         <span class="font-medium">Alert!</span> No se cargo ningún archivo válido.
       </div>
     @endif
     @if (isset($util) && $util)
-      <div class="p-4 mb-4 text-sm text-green-800 rounded-lg bg-green-300 dark:bg-gray-800 dark:text-green-400"
-        role="alert" style="position: absolute;z-index: 1;top: 0;">
+      <div
+        class="p-4 mb-4 text-sm text-green-800 rounded-lg bg-green-300 dark:bg-gray-800 dark:text-green-400 lg:ml-0 ml-6 vanish"
+        role="alert" style="position: absolute;z-index: 1;top: 0;margin-top:1rem" id="alertfeedback">
         <span class="font-medium">Success alert!</span> Gracias por el feedback.
       </div>
     @endif
-    <div class="mx-auto p-6 lg:p-8 flex-row flex gap-x-10 flex flex-col">
-      <div class="flex flex-col justify-center">
+    <div class="mx-auto p-6 lg:p-8 gap-x-10 flex flex-col">
+      <div class="flex flex-col justify-center mt-8">
         <div class="flex justify-center">
           <svg viewBox="0 0 62 65" fill="none" xmlns="http://www.w3.org/2000/svg"
             class="h-16 w-auto bg-gray-100 dark:bg-gray-900">
@@ -60,7 +81,22 @@
                   required>
               </div>
               <div class="mb-6">
-
+                <label for="email" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Especifique
+                  el currency</label>
+                <div class="grid grid-cols-2 gap-2 rounded-xl bg-gray-200 p-2 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white">
+                  <div>
+                    <input type="radio" name="currency" id="pesos" value="1" class="peer hidden" checked />
+                    <label for="pesos"
+                      class="block cursor-pointer select-none rounded-xl p-2 text-center peer-checked:bg-blue-700 peer-checked:font-bold peer-checked:text-white ">Pesos</label>
+                  </div>
+                  <div>
+                    <input type="radio" name="currency" id="soles" value="2" class="peer hidden" />
+                    <label for="soles"
+                      class="block cursor-pointer select-none rounded-xl p-2 text-center peer-checked:bg-blue-700 peer-checked:font-bold peer-checked:text-white">Soles</label>
+                  </div>
+                </div>
+              </div>
+              <div class="mb-6">
                 <div class="flex items-center justify-center w-full">
                   <label class="block mx-4 w-full">
                     <span class="sr-only">Subir archivo</span>
@@ -95,12 +131,12 @@
         @endif
       </div>
 
-      <div class="flex justify-center mt-16 px-0 sm:items-center sm:justify-between">
+      <div class="flex justify-center lg:mt-16 mt-8 px-0 sm:items-center sm:justify-between">
         <div class="text-center text-sm text-gray-500 dark:text-gray-400 sm:text-left">
           <div class="flex items-center gap-4">
             <a href="https://www.linkedin.com/in/dayana-sophia-paz-alejos"
               class="group inline-flex items-center hover:text-gray-700 dark:hover:text-white focus:outline focus:outline-2 focus:rounded-sm focus:outline-red-500">
-               <em>Espero les sirva :)</em> 
+              <em>Espero les sirva :)</em>
             </a>
           </div>
         </div>
@@ -114,7 +150,14 @@
       </div>
     </div>
   </div>
-
+  <script>
+    if (localStorage.getItem('dark-mode') === 'true' || (!('dark-mode' in localStorage) && window.matchMedia(
+        '(prefers-color-scheme: dark)').matches)) {
+      document.querySelector('html').classList.add('dark');
+    } else {
+      document.querySelector('html').classList.remove('dark');
+    }
+  </script>
 </body>
 
 </html>
