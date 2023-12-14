@@ -15,8 +15,7 @@ use App\Models\Validation;
 */
 
 Route::get('/', function () {
-    $validationInstance = Validation::first();
-    $valtotales = $validationInstance->total;
+    $valtotales = Validation::count();
     // dd($valtotales);
     return view('welcome')->with('valtotales', $valtotales);
 })->name('index');

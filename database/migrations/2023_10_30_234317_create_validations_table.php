@@ -12,8 +12,11 @@ return new class extends Migration {
     {
         Schema::create('validations', function (Blueprint $table) {
             $table->id();
-            $table->integer('total')->default(0);
-            $table->integer('util')->default(0);
+            // $table->integer('total')->default(0);
+            $table->float('monto');
+            $table->float('threshold');
+            $table->tinyInteger('currency')->default(1);
+            $table->boolean('util')->default(0);
             $table->timestamps();
         });
     }

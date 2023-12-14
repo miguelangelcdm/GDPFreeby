@@ -10,8 +10,12 @@ class Validation extends Model
     // use HasFactory;
     protected $fillable = [
         'Id',
-        'total',
+        // 'total',
+        'monto',
+        'threshold',
+        'currency',
         'util',
-        'updated_at'
+        'updated_at',
+        'created_at'
     ];
 }

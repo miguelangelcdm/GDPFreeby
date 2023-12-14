@@ -18,18 +18,18 @@ class Controller extends BaseController
         if ($request->file('csv_file')) {
             // New file uploaded
             $csvFile = $request->file('csv_file');
-            // dd($csvFile);
             $csvFileContent = $this->readCsvContent($csvFile);
             session(['csv_file_content' => $csvFileContent]);
-            $validation = Validation::first(); // Assuming you have only one record
-            if ($validation) {
-                // If the record exists, increment the "total" field
-                $validation->total = $validation->total ? $validation->total + 1 : 1;
-                $validation->save();
-            } else {
-                // If the record doesn't exist, you may want to create it with "total" set to 1
-                Validation::create(['total' => 1, 'util' => 0]); // Assuming 'util' should also have a default value
-            }
+            // $validation = Validation::first(); // Assuming you have only one record
+            // if ($validation) {
+            //     // If the record exists, increment the "total" field
+            //     $validation->total = $validation->total ? $validation->total + 1 : 1;
+            //     $validation->save();
+            // } else {
+            //     // If the record doesn't exist, you may want to create it with "total" set to 1
+            //     Validation::create(['total' => 1, 'util' => 0]); // Assuming 'util' should also have a default value
+            // }
+            $this->storevali($request);
         } else {
             // Use the stored file content
             $csvFileContent = session('csv_file_content');
@@ -42,6 +42,7 @@ class Controller extends BaseController
                     ->route('index')
                     ->with('error', 'No CSV file provided.');
             }
+            $this->storevali($request);
         }
 
         // Now you can proceed with $csvFileContent
@@ -50,7 +51,7 @@ class Controller extends BaseController
             fwrite($csvFile, $line);
         }
         rewind($csvFile);
-
+        // dd();
         // Continue with the rest of your CSV processing logic
         if (($handle = $csvFile) !== false) {
             // Read the first row to determine the delimiter
@@ -67,9 +68,6 @@ class Controller extends BaseController
             fclose($handle);
         }
         $threshold = floatval($request->input('threshold')) * 100;
-
-        // fgetcsv( resource $handle [, int $length = 0 [, string $delimiter = "," [, string $enclosure = '"' [, string $escape = "\" ]]]]): array
-        // dd($csvData);
         $balances = [];
         $rowCount = count($csvData);
         $balances[] = 0;
@@ -100,10 +98,11 @@ class Controller extends BaseController
                 '$balances' => $balances[$i] ?? 'N/A',
                 'JugadasGratis' => $csvData[$i][8] ?? 'N/A',
                 'Hora' => $csvData[$i][10] ?? 'N/A',
-                'ObjectId'=> $csvData[$i][11] ??'N/A',
+                'ObjectId' => $csvData[$i][11] ?? 'N/A',
             ];
         }
         // dd($matrix);
+
         // Filter the matrix based on the abrupt change until the search_value position
         $searchValue = floatval($request->input('search_value')) * -100;
         if ($searchValue !== null) {
@@ -146,60 +145,81 @@ class Controller extends BaseController
             }
         }
         $currency = $request->input('currency');
-        
+        // dd($currency);
         $request->session()->put('processedData', [
             'matrix' => $matrix,
             'searchValue' => $searchValue,
             'threshold' => $threshold,
-            'floro' => $this->floro($gameNames,$currency,$matrix,$convertedValues),
+            'floro' => $this->floro($gameNames, $currency, $matrix, $convertedValues),
         ]);
-        $validationInstance = Validation::first();
-        $valtotales = $validationInstance->total;
+        $valtotales = Validation::count();
         return view('results')
             ->with('matrix', $matrix)
             ->with('searchValue', $searchValue)
             ->with('threshold', $threshold)
-            ->with('floro', $this->floro($gameNames,$currency,$matrix,$convertedValues))
-            ->with('valtotales',$valtotales);
-
+            ->with('currency',$currency)
+            ->with('floro', $this->floro($gameNames, $currency, $matrix, $convertedValues))
+            ->with('valtotales', $valtotales);
     }
-
-    public function floro($gameNames,$currency,$matrix,$convertedValues){
+    public function floro($gameNames, $currency, $matrix, $convertedValues)
+    {
         if (count($gameNames) == 1) {
-            if ($currency==1) {
+            if ($currency == 1) {
                 $floro = 'El usuario <colocar el usuario aquí> tenía un balance inicial de ' . floatval($matrix[0]['BalanceStart']) / 100 . ' pesos, con apuestas de ' . implode(', ', $convertedValues) . ' pesos en el juego ' . reset($gameNames) . ' , fue aumentando su balance hasta ' . floatval($matrix[count($matrix) - 1]['BalanceEnd']) / 100 . ' pesos.';
-            }else{
+            } else {
                 $floro = 'El usuario <colocar el usuario aquí> tenía un balance inicial de ' . floatval($matrix[0]['BalanceStart']) / 100 . ' soles, con apuestas de ' . implode(', ', $convertedValues) . ' soles en el juego ' . reset($gameNames) . ' , fue aumentando su balance hasta ' . floatval($matrix[count($matrix) - 1]['BalanceEnd']) / 100 . ' soles. Es conforme';
             }
         } else {
             $lastGame = array_pop($gameNames);
-            if ($currency==1) {
+            if ($currency == 1) {
                 $floro = 'El usuario <colocar el usuario aquí> tenía un balance inicial de ' . floatval($matrix[0]['BalanceStart']) / 100 . ' pesos, con apuestas de ' . implode(', ', $convertedValues) . ' pesos en los juegos ' . implode(', ', $gameNames) . ' y ' . $lastGame . ' , fue aumentando su balance hasta ' . floatval($matrix[count($matrix) - 1]['BalanceEnd']) / 100 . ' pesos.';
-            }else{
+            } else {
                 $floro = 'El usuario <colocar el usuario aquí> tenía un balance inicial de ' . floatval($matrix[0]['BalanceStart']) / 100 . ' soles, con apuestas de ' . implode(', ', $convertedValues) . ' soles en los juegos ' . implode(', ', $gameNames) . ' y ' . $lastGame . ' , fue aumentando su balance hasta ' . floatval($matrix[count($matrix) - 1]['BalanceEnd']) / 100 . ' soles. Es conforme';
             }
         }
         return $floro;
     }
-
-    public function utilstorage()
+    public function utilstorage(Request $request)
     {
-        $util = false;
-        $validation = Validation::first(); // Assuming you have only one record
+        // $request->validate([
+        //     'monto' => 'required',
+        //     'threshold' => 'required',
+        // ]);
 
-        if ($validation) {
-            // If the record exists, increment the "util" field
-            $validation->util = $validation->util ? $validation->util + 1 : 1;
-            $validation->save();
-            $util = true;
+        $latestValidation = Validation::where('monto', $request->search_value)
+            ->where('threshold', $request->threshold)
+            ->latest('created_at')
+            ->first();
+        if ($latestValidation) {
+            // Update the most recent matching record
+            $latestValidation->util = '1';
+            $latestValidation->save();
         } else {
-            // If the record doesn't exist, create it with "util" set to 1
-            $validation = Validation::create(['total' => 0, 'util' => 1]); // Assuming 'util' should have a default value of 1
-            $util = true;
+            // Create a new record if not found
+            $validation = new Validation();
+            $validation->monto = $request->search_value;
+            $validation->threshold = $request->threshold;
+            $validation->currency = $request->currency;
+            $validation->save();
         }
-        $valtotales = $validation->total;
+        // $util = false;
+        // $validation = Validation::first(); // Assuming you have only one record
+
+        // if ($validation) {
+        //     // If the record exists, increment the "util" field
+        //     $validation->util = $validation->util ? $validation->util + 1 : 1;
+        //     $validation->save();
+        //     $util = true;
+        // } else {
+        //     // If the record doesn't exist, create it with "util" set to 1
+        //     $validation = Validation::create(['total' => 0, 'util' => 1]); // Assuming 'util' should have a default value of 1
+        //     $util = true;
+        // }
+        // $valtotales = $validation->total;
+        $valtotales = Validation::count();
+        $util=1;
         // Pass the 'util' variable directly to the view using compact
-        return view('welcome', compact('util'),compact('valtotales'));
+        return view('welcome', compact('util'), compact('valtotales'));
     }
     public function readCsvContent($file)
     {
@@ -262,5 +282,17 @@ class Controller extends BaseController
 
         // If no abrupt change is found, return the beginning of the array
         return 0;
+    }
+    public function storevali($request): void
+    {
+        // $request->validate([
+        //     // 'monto' => 'required',
+        //     'threshold' => 'required',
+        // ]);
+        $validation = new Validation();
+        $validation->monto = $request->search_value;
+        $validation->threshold = $request->threshold;
+        $validation->currency = $request->currency;
+        $validation->save();
     }
 }
